@@ -8,13 +8,13 @@ const signUp = async (req, res) => {
       password,
       displayName,
     });
-    console.log(`User created: ${userRecord.uid}`);
-    res.status(201).json({
-      uid: userRecord.uid,
+
+    await admin.firestore().collection("users").doc(userRecord.uid).set({
       email: userRecord.email,
-      displayName: userRecord.displayName,
+      displayName: userRecord.displayName
     });
-    console.log("Responding with:", {
+
+    res.status(201).json({
       uid: userRecord.uid,
       email: userRecord.email,
       displayName: userRecord.displayName,
