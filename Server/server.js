@@ -23,4 +23,7 @@ app.get("/", (req, res) => {
 });
 
 const authRouter = require("./routes/authentication");
+const categoryRouter = require("./routes/category");
+
 app.use("/api/auth", authRouter);
+app.use("/api/categories", categoryRouter);
