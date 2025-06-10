@@ -6,6 +6,6 @@ router.post('/get', getCategories);
 router.post('/create', createCategory);
 router.post('/initial', createInitialCategories);
 router.put('/:categoryId', updateCategory);
-router.delete('/:categoryId', deleteCategory);
+router.post('/:categoryId', deleteCategory);
 
 module.exports = router;
