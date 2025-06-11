@@ -31,11 +31,11 @@ const createCategory = async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    const { categoryId, type, title, icon, limit } = category;
-    if (!categoryId || !type || !title || !icon) {
+    const { categoryId, type, title, icon, limit, updatedAt } = category;
+    if (!categoryId || !type || !title || !icon || !updatedAt) {
       return res
         .status(400)
-        .json({ error: "Category ID, type, title, and icon are required" });
+        .json({ error: "Missing required values" });
     }
 
     const categoryData = {
@@ -44,6 +44,7 @@ const createCategory = async (req, res) => {
       title,
       icon,
       limit: limit || null,
+      updatedAt: updatedAt || admin.firestore.FieldValue.serverTimestamp(),
     };
     const categoryRef = db
       .collection("users")
@@ -68,13 +69,14 @@ const createInitialCategories = async (req, res) => {
     }
     const batch = db.batch();
     categories.forEach((category) => {
-      const { categoryId, type, title, icon, limit } = category;
+      const { categoryId, type, title, icon, limit, updatedAt } = category;
       const categoryData = {
         categoryId,
         type,
         title,
         icon,
         limit: limit || null,
+        updatedAt: updatedAt || admin.firestore.FieldValue.serverTimestamp(),
       };
       const categoryRef = db
         .collection("users")
@@ -102,12 +104,13 @@ const updateCategory = async (req, res) => {
           error: "User ID, category data, and Category ID are required",
         });
     }
-    const { type, title, icon, limit } = category;
+    const { type, title, icon, limit, updatedAt } = category;
     const categoryData = {
       type,
       title,
       icon,
       limit: limit || null,
+      updatedAt: updatedAt || admin.firestore.FieldValue.serverTimestamp(),
     };
     const categoryRef = db
       .collection("users")
