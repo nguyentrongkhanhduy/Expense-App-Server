@@ -1,4 +1,4 @@
-const { db, admin } = require("../firebaseServices");
+const { db, admin, bucket } = require("../firebaseServices");
 
 const getTransactions = async (req, res) => {
   try {
@@ -142,9 +142,59 @@ const deleteTransaction = async (req, res) => {
   }
 };
 
+const uploadImageToStorage = async (req, res) => {
+  try {
+    const { userId, requestedImage } = req.body;
+    if (!userId || !requestedImage) {
+      return res.status(400).json({ error: "User ID and requested image are required" });
+    }
+    const { imageName, imageData } = requestedImage;
+    if (!imageName || !imageData) {
+      return res.status(400).json({ error: "Image name and data are required" });
+    }
+
+    const buffer = Buffer.from(imageData, "base64");
+    const file = bucket.file(`users/${userId}/transactions/${imageName}`);
+    const stream = file.createWriteStream({
+      metadata: { contentType },
+    });
+    stream.on("error", (error) => {
+      console.error("Error uploading image:", error);
+      res.status(500).json({ success: false, error: error.message });
+    });
+    stream.on("finish", async () => {
+      await file.makePublic();
+      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${file.name}`;
+      res.status(200).json({ success: true, imageUrl: publicUrl });
+    });
+    stream.end(buffer);
+  } catch (error) {
+    console.error("Error uploading image:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+}
+
+const removeImageFromStorage = async (req, res) => {
+  try {
+    const { userId, imageName } = req.body;
+    if (!userId || !imageName) {
+      return res.status(400).json({ error: "User ID and image name are required" });
+    }
+    const file = bucket.file(`users/${userId}/transactions/${imageName}`);
+    await file.delete();
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error("Error deleting image:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+
 module.exports = {
   getTransactions,
   createTransaction,
   updateTransaction,
   deleteTransaction,
+  uploadImageToStorage,
+  removeImageFromStorage
 };
