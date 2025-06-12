@@ -1,5 +1,4 @@
-const admin = require("firebase-admin");
-const db = admin.firestore();
+const { db, admin } = require("../firebaseServices");
 
 const getCategories = async (req, res) => {
   try {
@@ -33,9 +32,7 @@ const createCategory = async (req, res) => {
 
     const { categoryId, type, title, icon, limit, updatedAt } = category;
     if (!categoryId || !type || !title || !icon || !updatedAt) {
-      return res
-        .status(400)
-        .json({ error: "Missing required values" });
+      return res.status(400).json({ error: "Missing required values" });
     }
 
     const categoryData = {
@@ -98,11 +95,9 @@ const updateCategory = async (req, res) => {
     const { userId, category } = req.body;
     const { categoryId } = req.params;
     if (!userId || !category || !categoryId) {
-      return res
-        .status(400)
-        .json({
-          error: "User ID, category data, and Category ID are required",
-        });
+      return res.status(400).json({
+        error: "User ID, category data, and Category ID are required",
+      });
     }
     const { type, title, icon, limit, updatedAt } = category;
     const categoryData = {

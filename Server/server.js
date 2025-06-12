@@ -24,6 +24,8 @@ app.get("/", (req, res) => {
 
 const authRouter = require("./routes/authentication");
 const categoryRouter = require("./routes/category");
+const transactionRouter = require("./routes/transaction");
 
 app.use("/api/auth", authRouter);
 app.use("/api/categories", categoryRouter);
+app.use("/api/transactions", transactionRouter);
