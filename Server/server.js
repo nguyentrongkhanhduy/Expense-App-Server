@@ -3,7 +3,7 @@ require("dotenv").config();
 require("./firebaseServices");
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 const port = process.env.PORT;
