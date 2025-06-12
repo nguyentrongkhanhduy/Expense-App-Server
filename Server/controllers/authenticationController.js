@@ -1,17 +1,17 @@
-const admin = require("firebase-admin");
+const { auth, db } = require("../firebaseServices");
 
 const signUp = async (req, res) => {
   try {
     const { email, password, displayName } = req.body;
-    const userRecord = await admin.auth().createUser({
+    const userRecord = await auth.createUser({
       email,
       password,
       displayName,
     });
 
-    await admin.firestore().collection("users").doc(userRecord.uid).set({
+    await db.collection("users").doc(userRecord.uid).set({
       email: userRecord.email,
-      displayName: userRecord.displayName
+      displayName: userRecord.displayName,
     });
 
     res.status(201).json({
@@ -27,9 +27,9 @@ const signUp = async (req, res) => {
 const signIn = async (req, res) => {
   try {
     const { idToken } = req.body;
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
+    const decodedToken = await auth.verifyIdToken(idToken);
     const uid = decodedToken.uid;
-    const userRecord = await admin.auth().getUser(uid);
+    const userRecord = await auth.getUser(uid);
 
     console.log(`User signed in: ${userRecord.uid}`);
     res.status(200).json({
