@@ -123,6 +123,40 @@ const updateTransaction = async (req, res) => {
   }
 };
 
+const reassignCategory = async (req, res) => {
+  try {
+    const { userId, oldCategoryId, newCategoryId } = req.body;
+    if (!userId || !oldCategoryId || !newCategoryId) {
+      return res
+        .status(400)
+        .json({ error: "User ID and category IDs are required" });
+    }
+
+    const transactionsRef = db
+      .collection("users")
+      .doc(userId)
+      .collection("transactions");
+    const snapshot = await transactionsRef
+      .where("categoryId", "==", oldCategoryId)
+      .get();
+
+    if (snapshot.empty) {
+      return res.status(404).json({ error: "No transactions found" });
+    }
+
+    const batch = db.batch();
+    snapshot.forEach((doc) => {
+      batch.update(doc.ref, { categoryId: newCategoryId });
+    });
+
+    await batch.commit();
+    res.status(200).json({ success: true, message: "Category reassigned" });
+  } catch (error) {
+    console.error("Error reassigning category:", error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
 const deleteTransaction = async (req, res) => {
   try {
     const { userId } = req.body;
@@ -147,7 +181,6 @@ const deleteTransaction = async (req, res) => {
 
 const uploadImageToStorage = async (req, res) => {
   try {
-    console.log(req.body);
     const { userId, requestedImage } = req.body;
     if (!userId || !requestedImage) {
       return res
@@ -162,7 +195,7 @@ const uploadImageToStorage = async (req, res) => {
     }
 
     const buffer = Buffer.from(imageData, "base64");
-    const file = bucket.file(`users/${userId}/transactions/${imageName}`);
+    const file = bucket.file(`users/${userId}/${imageName}`);
     const stream = file.createWriteStream({
       metadata: { contentType },
     });
@@ -240,6 +273,7 @@ module.exports = {
   getTransactions,
   createTransaction,
   updateTransaction,
+  reassignCategory,
   deleteTransaction,
   uploadImageToStorage,
   updateImageInStorage,
