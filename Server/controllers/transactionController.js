@@ -155,7 +155,7 @@ const reassignCategory = async (req, res) => {
     console.error("Error reassigning category:", error);
     res.status(500).json({ error: error.message });
   }
-}
+};
 
 const deleteTransaction = async (req, res) => {
   try {
@@ -232,9 +232,13 @@ const updateImageInStorage = async (req, res) => {
     }
 
     const buffer = Buffer.from(imageData, "base64");
-    const file = bucket.file(`users/${userId}/transactions/${imageName}`);
+    const file = bucket.file(`users/${userId}/${imageName}`);
     const stream = file.createWriteStream({
-      metadata: { contentType },
+      metadata: {
+        contentType,
+        cacheControl: "no-cache",
+      },
+      resumable: false,
     });
     stream.on("error", (error) => {
       console.error("Error updating image:", error);
@@ -242,7 +246,10 @@ const updateImageInStorage = async (req, res) => {
     });
     stream.on("finish", async () => {
       await file.makePublic();
-      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${file.name}`;
+      const timestamp = Date.now();
+      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${file.name}?t=${timestamp}`;
+      console.log("Image updated successfully:", publicUrl);
+
       res.status(200).json({ success: true, imageUrl: publicUrl });
     });
     stream.end(buffer);
@@ -260,7 +267,7 @@ const removeImageFromStorage = async (req, res) => {
         .status(400)
         .json({ error: "User ID and image name are required" });
     }
-    const file = bucket.file(`users/${userId}/transactions/${imageName}`);
+    const file = bucket.file(`users/${userId}/${imageName}`);
     await file.delete();
     res.status(200).json({ success: true });
   } catch (error) {
