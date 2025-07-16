@@ -1,6 +1,7 @@
 const express = require("express");
 require("dotenv").config();
 require("./firebaseServices");
+require("./scheduler")
 
 const app = express();
 app.use(express.json({ limit: "10mb" }));
