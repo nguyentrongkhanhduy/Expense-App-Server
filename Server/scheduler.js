@@ -5,7 +5,7 @@ const {
 } = require("./controllers/transactionController");
 
 cron.schedule(
-  "45 22 * * 2",
+  "48 22 * * 2",
   () => {
     console.log("Running weekly summary task...");
     sendWeeklySummaries();
