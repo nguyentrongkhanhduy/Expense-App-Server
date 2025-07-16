@@ -1,3 +1,4 @@
+const e = require("express");
 const { db, admin, bucket } = require("../firebaseServices");
 
 const getTransactions = async (req, res) => {
@@ -350,14 +351,16 @@ const sendWeeklySummaries = async () => {
   try {
     const userSnapshot = await db.collection("users").get();
     const currentDate = new Date();
-    const startOfWeek = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth(),
-      currentDate.getDate() - currentDate.getDay()
-    );
+    const startOfWeek = new Date(currentDate);
+    const day = currentDate.getDay();
+    const diffToMonday = (day === 0 ? -6 : 1) - day;
+    startOfWeek.setDate(currentDate.getDate() + diffToMonday);
+    startOfWeek.setUTCHours(0, 0, 0, 0);
+
     const endOfWeek = new Date(startOfWeek);
-    startOfWeek.setHours(0, 0, 0, 0);
-    endOfWeek.setHours(23, 59, 59, 999);
+    endOfWeek.setUTCDate(startOfWeek.getUTCDate() + 6);
+    endOfWeek.setUTCHours(23, 59, 59, 999);
+
     const startMillis = startOfWeek.getTime();
     const endMillis = endOfWeek.getTime();
 
@@ -400,15 +403,32 @@ const sendWeeklySummaries = async () => {
       )} and earned $${totalEarned.toFixed(2)} this week.`;
 
       const message = {
-        notification: {
+        data: {
           title: "Weekly Summary",
           body: bodyText,
         },
         token: userData.fcmToken,
       };
 
-      await admin.messaging().send(message);
-      console.log(`Weekly summary sent to user ${userId}`);
+      await admin
+        .messaging()
+        .send(message)
+        .then(() => {
+          console.log(`Weekly summary sent to user ${userId}`);
+        })
+        .catch((error) => {
+          if (error.code === "messaging/invalid-registration-token") {
+            console.warn(
+              `Invalid FCM token for user ${userId}: ${error.message}`
+            );
+            db.collection("users").doc(userId).update({ fcmToken: null });
+          } else {
+            console.error(
+              `Error sending weekly summary to user ${userId}:`,
+              error
+            );
+          }
+        });
     }
   } catch (error) {
     console.error("Error sending weekly summaries:", error);
@@ -420,17 +440,25 @@ const sendMonthlySummaries = async () => {
     const userSnapshot = await db.collection("users").get();
     const currentDate = new Date();
     const startOfMonth = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth(),
-      1
+      Date.UTC(
+        currentDate.getUTCFullYear(),
+        currentDate.getUTCMonth(),
+        1,
+        0,
+        0,
+        0
+      )
     );
     const endOfMonth = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth() + 1,
-      0,
-      23,
-      59,
-      59
+      Date.UTC(
+        currentDate.getUTCFullYear(),
+        currentDate.getUTCMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999
+      )
     );
     const startMillis = startOfMonth.getTime();
     const endMillis = endOfMonth.getTime();
@@ -474,15 +502,32 @@ const sendMonthlySummaries = async () => {
       )} and earned $${totalEarned.toFixed(2)} this month.`;
 
       const message = {
-        notification: {
+        data: {
           title: "Monthly Summary",
           body: bodyText,
         },
         token: userData.fcmToken,
       };
 
-      await admin.messaging().send(message);
-      console.log(`Monthly summary sent to user ${userId}`);
+      await admin
+        .messaging()
+        .send(message)
+        .then(() => {
+          console.log(`Monthly summary sent to user ${userId}`);
+        })
+        .catch((error) => {
+          if (error.code === "messaging/invalid-registration-token") {
+            console.warn(
+              `Invalid FCM token for user ${userId}: ${error.message}`
+            );
+            db.collection("users").doc(userId).update({ fcmToken: null });
+          } else {
+            console.error(
+              `Error sending monthly summary to user ${userId}:`,
+              error
+            );
+          }
+        });
     }
   } catch (error) {
     console.error("Error sending monthly summaries:", error);
