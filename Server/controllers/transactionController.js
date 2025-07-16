@@ -276,6 +276,219 @@ const removeImageFromStorage = async (req, res) => {
   }
 };
 
+const sendTestNotification = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: "User ID is required" });
+    }
+
+    const userDoc = await db.collection("users").doc(userId).get();
+    const userData = userDoc.data();
+
+    if (!userData || !userData.fcmToken) {
+      return res
+        .status(404)
+        .json({ error: "User not found or FCM token missing" });
+    }
+
+    const transactionRef = db
+      .collection("users")
+      .doc(userId)
+      .collection("transactions");
+
+    const startOfJune = new Date(new Date().getFullYear(), 5, 1).getTime();
+    const endOfJune = new Date(
+      new Date().getFullYear(),
+      5,
+      30,
+      23,
+      59,
+      59
+    ).getTime();
+
+    const juneSnapshot = await transactionRef
+      .where("date", ">=", startOfJune)
+      .where("date", "<=", endOfJune)
+      .get();
+
+    let totalSpent = 0;
+    let totalEarned = 0;
+    juneSnapshot.forEach((doc) => {
+      const transaction = doc.data();
+      if (transaction.type === "expense") {
+        totalSpent += transaction.amount || 0;
+      } else if (transaction.type === "income") {
+        totalEarned += transaction.amount || 0;
+      }
+    });
+
+    const bodyText = `You spent $${totalSpent.toFixed(
+      2
+    )} and earned $${totalEarned.toFixed(2)} in June.`;
+
+    const message = {
+      data: {
+        title: "June Summary",
+        body: bodyText,
+      },
+      token: userData.fcmToken,
+    };
+
+    const response = await admin.messaging().send(message);
+    console.log("Successfully sent message:", response);
+    res
+      .status(200)
+      .json({ success: true, message: "Notification sent successfully" });
+  } catch (error) {
+    console.error("Error sending test notification:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+const sendWeeklySummaries = async () => {
+  try {
+    const userSnapshot = await db.collection("users").get();
+    const currentDate = new Date();
+    const startOfWeek = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      currentDate.getDate() - currentDate.getDay()
+    );
+    const endOfWeek = new Date(startOfWeek);
+    startOfWeek.setHours(0, 0, 0, 0);
+    endOfWeek.setHours(23, 59, 59, 999);
+    const startMillis = startOfWeek.getTime();
+    const endMillis = endOfWeek.getTime();
+
+    for (const userDoc of userSnapshot.docs) {
+      const userId = userDoc.id;
+      const userData = userDoc.data();
+
+      if (!userData.fcmToken) {
+        console.warn(`No FCM token for user ${userId}`);
+        continue;
+      }
+      if (userData.messagePreference !== "Weekly") {
+        continue;
+      }
+
+      const transactionRef = db
+        .collection("users")
+        .doc(userId)
+        .collection("transactions");
+
+      const weeklySnapshot = await transactionRef
+        .where("date", ">=", startMillis)
+        .where("date", "<=", endMillis)
+        .get();
+
+      let totalSpent = 0;
+      let totalEarned = 0;
+
+      weeklySnapshot.forEach((doc) => {
+        const transaction = doc.data();
+        if (transaction.type === "expense") {
+          totalSpent += transaction.amount || 0;
+        } else if (transaction.type === "income") {
+          totalEarned += transaction.amount || 0;
+        }
+      });
+
+      const bodyText = `You spent $${totalSpent.toFixed(
+        2
+      )} and earned $${totalEarned.toFixed(2)} this week.`;
+
+      const message = {
+        notification: {
+          title: "Weekly Summary",
+          body: bodyText,
+        },
+        token: userData.fcmToken,
+      };
+
+      await admin.messaging().send(message);
+      console.log(`Weekly summary sent to user ${userId}`);
+    }
+  } catch (error) {
+    console.error("Error sending weekly summaries:", error);
+  }
+};
+
+const sendMonthlySummaries = async () => {
+  try {
+    const userSnapshot = await db.collection("users").get();
+    const currentDate = new Date();
+    const startOfMonth = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      1
+    );
+    const endOfMonth = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth() + 1,
+      0,
+      23,
+      59,
+      59
+    );
+    const startMillis = startOfMonth.getTime();
+    const endMillis = endOfMonth.getTime();
+
+    for (const userDoc of userSnapshot.docs) {
+      const userId = userDoc.id;
+      const userData = userDoc.data();
+
+      if (!userData.fcmToken) {
+        console.warn(`No FCM token for user ${userId}`);
+        continue;
+      }
+      if (userData.messagePreference !== "Monthly") {
+        continue;
+      }
+
+      const transactionRef = db
+        .collection("users")
+        .doc(userId)
+        .collection("transactions");
+
+      const monthlySnapshot = await transactionRef
+        .where("date", ">=", startMillis)
+        .where("date", "<=", endMillis)
+        .get();
+
+      let totalSpent = 0;
+      let totalEarned = 0;
+
+      monthlySnapshot.forEach((doc) => {
+        const transaction = doc.data();
+        if (transaction.type === "expense") {
+          totalSpent += transaction.amount || 0;
+        } else if (transaction.type === "income") {
+          totalEarned += transaction.amount || 0;
+        }
+      });
+
+      const bodyText = `You spent $${totalSpent.toFixed(
+        2
+      )} and earned $${totalEarned.toFixed(2)} this month.`;
+
+      const message = {
+        notification: {
+          title: "Monthly Summary",
+          body: bodyText,
+        },
+        token: userData.fcmToken,
+      };
+
+      await admin.messaging().send(message);
+      console.log(`Monthly summary sent to user ${userId}`);
+    }
+  } catch (error) {
+    console.error("Error sending monthly summaries:", error);
+  }
+};
+
 module.exports = {
   getTransactions,
   createTransaction,
@@ -285,4 +498,7 @@ module.exports = {
   uploadImageToStorage,
   updateImageInStorage,
   removeImageFromStorage,
+  sendTestNotification,
+  sendWeeklySummaries,
+  sendMonthlySummaries,
 };
