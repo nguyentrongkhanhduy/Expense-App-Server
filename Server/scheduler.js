@@ -5,7 +5,7 @@ const {
 } = require("./controllers/transactionController");
 
 cron.schedule(
-  "15 22 * * 2",
+ "15 22 * * 2",
   () => {
     console.log("Running weekly summary task...");
     sendWeeklySummaries();
@@ -25,7 +25,3 @@ cron.schedule(
     timezone: "America/Toronto",
   }
 );
-
-// cron.schedule("* * * * *", () => {
-//   console.log("CRON RUNNING:", new Date().toString());
-// });
