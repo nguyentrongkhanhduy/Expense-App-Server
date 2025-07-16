@@ -1,13 +1,27 @@
 const cron = require("node-cron");
-const { sendWeeklySummaries, sendMonthlySummaries } = require("./controllers/transactionController");
+const {
+  sendWeeklySummaries,
+  sendMonthlySummaries,
+} = require("./controllers/transactionController");
 
-cron.schedule("0 8 * * 1", () => {
-  console.log("Running weekly summary task...");
-  sendWeeklySummaries();
-});
+cron.schedule(
+  "5 22 * * 2",
+  () => {
+    console.log("Running weekly summary task...");
+    sendWeeklySummaries();
+  },
+  {
+    timezone: "America/Toronto",
+  }
+);
 
-
-cron.schedule("0 8 1 * *", () => {
-  console.log("Running monthly summary task...");
-  sendMonthlySummaries();
-});
+cron.schedule(
+  "0 8 1 * *",
+  () => {
+    console.log("Running monthly summary task...");
+    sendMonthlySummaries();
+  },
+  {
+    timezone: "America/Toronto",
+  }
+);
