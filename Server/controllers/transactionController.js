@@ -353,8 +353,8 @@ const sendWeeklySummaries = async () => {
     const currentDate = new Date();
     const startOfWeek = new Date(currentDate);
     const day = currentDate.getDay();
-    const diffToMonday = (day === 0 ? -6 : 1) - day;
-    startOfWeek.setDate(currentDate.getDate() + diffToMonday);
+    const diffToLastMonday = (day === 0 ? -13 : -6) - day;
+    startOfWeek.setDate(currentDate.getDate() + diffToLastMonday);
     startOfWeek.setUTCHours(0, 0, 0, 0);
 
     const endOfWeek = new Date(startOfWeek);
@@ -400,7 +400,7 @@ const sendWeeklySummaries = async () => {
 
       const bodyText = `You spent $${totalSpent.toFixed(
         2
-      )} and earned $${totalEarned.toFixed(2)} this week.`;
+      )} and earned $${totalEarned.toFixed(2)} last week.`;
 
       const message = {
         data: {
@@ -442,20 +442,18 @@ const sendMonthlySummaries = async () => {
   try {
     const userSnapshot = await db.collection("users").get();
     const currentDate = new Date();
-    const startOfMonth = new Date(
-      Date.UTC(
-        currentDate.getUTCFullYear(),
-        currentDate.getUTCMonth(),
-        1,
-        0,
-        0,
-        0
-      )
+    const lastMonth = new Date(
+      Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth() - 1, 1)
     );
+
+    const startOfMonth = new Date(
+      Date.UTC(lastMonth.getUTCFullYear(), lastMonth.getUTCMonth(), 1, 0, 0, 0)
+    );
+
     const endOfMonth = new Date(
       Date.UTC(
-        currentDate.getUTCFullYear(),
-        currentDate.getUTCMonth() + 1,
+        lastMonth.getUTCFullYear(),
+        lastMonth.getUTCMonth() + 1,
         0,
         23,
         59,
@@ -502,7 +500,7 @@ const sendMonthlySummaries = async () => {
 
       const bodyText = `You spent $${totalSpent.toFixed(
         2
-      )} and earned $${totalEarned.toFixed(2)} this month.`;
+      )} and earned $${totalEarned.toFixed(2)} last month.`;
 
       const message = {
         data: {
