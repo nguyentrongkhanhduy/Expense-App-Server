@@ -416,12 +416,15 @@ const sendWeeklySummaries = async () => {
         .then(() => {
           console.log(`Weekly summary sent to user ${userId}`);
         })
-        .catch((error) => {
-          if (error.code === "messaging/invalid-registration-token") {
+        .catch(async (error) => {
+          if (error.code === "messaging/registration-token-not-registered") {
             console.warn(
               `Invalid FCM token for user ${userId}: ${error.message}`
             );
-            db.collection("users").doc(userId).update({ fcmToken: null });
+            await db
+              .collection("users")
+              .doc(userId)
+              .update({ fcmToken: admin.firestore.FieldValue.delete() });
           } else {
             console.error(
               `Error sending weekly summary to user ${userId}:`,
@@ -515,12 +518,15 @@ const sendMonthlySummaries = async () => {
         .then(() => {
           console.log(`Monthly summary sent to user ${userId}`);
         })
-        .catch((error) => {
-          if (error.code === "messaging/invalid-registration-token") {
+        .catch(async (error) => {
+          if (error.code === "messaging/registration-token-not-registered") {
             console.warn(
               `Invalid FCM token for user ${userId}: ${error.message}`
             );
-            db.collection("users").doc(userId).update({ fcmToken: null });
+            await db
+              .collection("users")
+              .doc(userId)
+              .update({ fcmToken: admin.firestore.FieldValue.delete() });
           } else {
             console.error(
               `Error sending monthly summary to user ${userId}:`,
