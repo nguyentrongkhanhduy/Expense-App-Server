@@ -1,4 +1,4 @@
-const { auth, db } = require("../firebaseServices");
+const { auth, db, admin } = require("../firebaseServices");
 
 const signUp = async (req, res) => {
   try {
@@ -57,8 +57,20 @@ const updateFcmToken = async (req, res) => {
         .json({ error: "User ID and FCM token are required" });
     }
 
-    await db.collection("users").doc(userId).set({ fcmToken }, { merge: true });
-
+    if (fcmToken === "Delete") {
+      await db.collection("users").doc(userId).update({
+        fcmToken: admin.firestore.FieldValue.delete(),
+      });
+      console.log(`FCM token deleted for user: ${userId}`);
+      return res
+        .status(200)
+        .json({ message: "FCM token deleted successfully" });
+    } else {
+      await db
+        .collection("users")
+        .doc(userId)
+        .set({ fcmToken }, { merge: true });
+    }
     console.log(`FCM token updated for user: ${userId}`);
     res.status(200).json({ message: "FCM token updated successfully" });
   } catch (error) {
